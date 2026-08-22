@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>KVGrid 审计日志</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:2rem;color:#222}
+nav a{margin-right:1rem}
+table{border-collapse:collapse;margin-top:.5rem}
+td,th{border:1px solid #ccc;padding:.4rem .7rem;text-align:left}
+</style>
+</head>
+<body>
+<h1>KVGrid 审计日志</h1>
+<nav><a href="/topology">拓扑</a><a href="/keys">键浏览</a><a href="/snapshots">快照</a><a href="/audit">审计</a></nav>
+<p id="count"></p>
+<table id="audit"><thead><tr><th>时间</th><th>类型</th><th>节点</th><th>Key</th><th>详情</th></tr></thead><tbody></tbody></table>
+<script>
+async function load(){
+  const res = await fetch('/api/audit');
+  const data = await res.json();
+  document.querySelector('#count').textContent = '事件总数: ' + data.count + '，按类型: ' + JSON.stringify(data.by_type);
+  const tb = document.querySelector('#audit tbody');
+  tb.innerHTML = '';
+  for (const e of data.entries) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${e.at}</td><td>${e.type}</td><td>${e.node || ''}</td><td>${e.key || ''}</td><td>${e.detail || ''}</td>`;
+    tb.appendChild(tr);
+  }
+}
+load();
+</script>
+</body>
+</html>
