@@ -17,7 +17,6 @@ type Router struct {
 	reg    *node.Registry
 	mig    *shard.Migrator
 	audit  *audit.Logger
-	cached map[string]string
 }
 
 // NewRouter creates a router bound to the cluster state.
@@ -29,11 +28,8 @@ func NewRouter(
 	mig *shard.Migrator,
 	audit *audit.Logger,
 ) *Router {
-	cached := make(map[string]string)
-	for _, sh := range own.Table().Shards {
-		if owner, ok := own.Table().OwnerOf(sh.ID); ok {
-			cached[sh.ID] = owner
-		}
-	}
-	return &Router{own: own, stores: stores, quota: q, reg: reg, mig: mig, audit: audit, cached: cached}
+	// Ownership is read live from the table on every lookup so that
+	// rebalances take effect immediately for routing; no cached snapshot
+	// is kept, which would otherwise pin writes to the pre-rebalance owner.
+	return &Router{own: own, stores: stores, quota: q, reg: reg, mig: mig, audit: audit}
 }

@@ -23,11 +23,12 @@ func (r *Router) Locate(key string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("%w: no shard covers %s", ErrNoOwner, key)
 	}
-	// The router keeps serving the ownership snapshot captured at startup,
-	// so rebalances that moved the shard are never reflected here.
-	owner, ok := r.cached[sh.ID]
+	// Read ownership straight from the live table so that rebalances
+	// (Ownership.Move -> SaveTable) take effect for routing immediately,
+	// instead of dispatching writes to the pre-rebalance owner.
+	owner, ok := r.own.Table().OwnerOf(sh.ID)
 	if !ok {
-		return "", fmt.Errorf("%w: shard %s has no cached owner", ErrNoOwner, sh.ID)
+		return "", fmt.Errorf("%w: shard %s has no owner", ErrNoOwner, sh.ID)
 	}
 	return owner, nil
 }
