@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>KVGrid 集群拓扑</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:2rem;color:#222}
+nav a{margin-right:1rem}
+table{border-collapse:collapse;margin-top:.5rem}
+td,th{border:1px solid #ccc;padding:.4rem .7rem;text-align:left}
+</style>
+</head>
+<body>
+<h1>KVGrid 集群拓扑</h1>
+<nav><a href="/topology">拓扑</a><a href="/keys">键浏览</a><a href="/snapshots">快照</a><a href="/audit">审计</a></nav>
+<h2>节点</h2>
+<table id="nodes"><thead><tr><th>节点</th><th>地址</th><th>状态</th><th>键数</th><th>分片数</th></tr></thead><tbody></tbody></table>
+<h2>分片归属</h2>
+<table id="shards"><thead><tr><th>分片</th><th>哈希范围</th><th>归属节点</th></tr></thead><tbody></tbody></table>
+<script>
+async function load(){
+  const res = await fetch('/api/topology');
+  const data = await res.json();
+  const nb = document.querySelector('#nodes tbody');
+  nb.innerHTML = '';
+  for (const n of data.nodes) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${n.id}</td><td>${n.address}</td><td>${n.state}</td><td>${n.keys}</td><td>${n.shards}</td>`;
+    nb.appendChild(tr);
+  }
+  const sb = document.querySelector('#shards tbody');
+  sb.innerHTML = '';
+  for (const s of data.shards) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${s.id}</td><td>${s.start} - ${s.end}</td><td>${s.owner}</td>`;
+    sb.appendChild(tr);
+  }
+}
+load();
+</script>
+</body>
+</html>
