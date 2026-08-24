@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>KVGrid 键浏览</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:2rem;color:#222}
+nav a{margin-right:1rem}
+table{border-collapse:collapse;margin-top:.5rem}
+td,th{border:1px solid #ccc;padding:.4rem .7rem;text-align:left}
+input{margin-right:.5rem}
+</style>
+</head>
+<body>
+<h1>KVGrid 键浏览</h1>
+<nav><a href="/topology">拓扑</a><a href="/keys">键浏览</a><a href="/snapshots">快照</a><a href="/audit">审计</a></nav>
+<h2>查询</h2>
+<input id="prefix" placeholder="前缀，留空查全部">
+<button onclick="load()">刷新</button>
+<table id="keys"><thead><tr><th>Key</th><th>大小</th><th>版本</th><th>过期时间</th></tr></thead><tbody></tbody></table>
+<script>
+async function load(){
+  const prefix = document.querySelector('#prefix').value;
+  const res = await fetch('/api/keys?prefix=' + encodeURIComponent(prefix));
+  const data = await res.json();
+  const tb = document.querySelector('#keys tbody');
+  tb.innerHTML = '';
+  for (const k of data) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${k.key}</td><td>${k.bytes}</td><td>${k.version}</td><td>${k.expires}</td>`;
+    tb.appendChild(tr);
+  }
+}
+load();
+</script>
+</body>
+</html>
