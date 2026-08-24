@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>KVGrid 快照管理</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:2rem;color:#222}
+nav a{margin-right:1rem}
+table{border-collapse:collapse;margin-top:.5rem}
+td,th{border:1px solid #ccc;padding:.4rem .7rem;text-align:left}
+</style>
+</head>
+<body>
+<h1>KVGrid 快照管理</h1>
+<nav><a href="/topology">拓扑</a><a href="/keys">键浏览</a><a href="/snapshots">快照</a><a href="/audit">审计</a></nav>
+<button onclick="take()">生成快照</button>
+<table id="snaps"><thead><tr><th>代际</th><th>目录</th></tr></thead><tbody></tbody></table>
+<script>
+async function load(){
+  const res = await fetch('/api/snapshots');
+  const data = await res.json();
+  const tb = document.querySelector('#snaps tbody');
+  tb.innerHTML = '';
+  for (const s of data) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${s.generation}</td><td>${s.path}</td>`;
+    tb.appendChild(tr);
+  }
+}
+async function take(){
+  await fetch('/api/snapshots', {method: 'POST'});
+  load();
+}
+load();
+</script>
+</body>
+</html>
