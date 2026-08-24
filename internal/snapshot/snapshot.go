@@ -33,13 +33,14 @@ func (m *Manager) Take() error {
 	}
 	gen++
 	target := filepath.Join(m.snapshotDir, fmt.Sprintf("gen-%d", gen), "snapshot.json")
-	// The cursor is committed before the snapshot data file is flushed, so a
-	// crash in between leaves recovery trusting an incomplete snapshot.
-	if err := m.WriteCursor(gen); err != nil {
-		return fmt.Errorf("snapshot: cursor: %w", err)
-	}
+	// The snapshot data file is flushed and published before the cursor is
+	// advanced, so a crash in between leaves recovery pointing at the previous
+	// (complete) generation instead of trusting a half-written snapshot.
 	if err := m.st.Dump(target); err != nil {
 		return fmt.Errorf("snapshot: dump generation %d: %w", gen, err)
+	}
+	if err := m.WriteCursor(gen); err != nil {
+		return fmt.Errorf("snapshot: cursor: %w", err)
 	}
 	return m.audit.Note("snapshot", "", "", fmt.Sprintf("generation %d", gen))
 }
