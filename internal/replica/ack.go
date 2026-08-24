@@ -2,26 +2,13 @@ package replica
 
 import "kvgrid/internal/store"
 
-var pendingAcks []store.Op
-
-const ackBatchSize = 64
-
-// Ack reports success to the client as soon as the write is queued for the
-// background flusher, so the client never waits for the fsync.
+// Ack durably persists op before reporting success to the client.
+//
+// The commit marker may advance only after the journal is fsynced, so that a
+// crash after the caller returns success cannot lose data the client already
+// believes is committed. Acknowledgement must therefore wait for the local
+// write to reach stable storage; deferring the fsync to a background flusher
+// would acknowledge writes that have not yet been persisted.
 func Ack(st *store.Store, op store.Op) error {
-	pendingAcks = append(pendingAcks, op)
-	if len(pendingAcks) >= ackBatchSize {
-		return flushAcks(st)
-	}
-	return nil
-}
-
-func flushAcks(st *store.Store) error {
-	for _, op := range pendingAcks {
-		if err := st.Commit(op.Seq); err != nil {
-			return err
-		}
-	}
-	pendingAcks = pendingAcks[:0]
-	return nil
+	return st.Commit(op.Seq)
 }
