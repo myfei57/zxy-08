@@ -11,11 +11,6 @@ func (s *Scanner) Scan(now int64) (int, error) {
 	if len(keys) == 0 {
 		return 0, nil
 	}
-	// The cursor moves before the batch is durably deleted, so a crash in the
-	// middle leaves expired keys behind the new cursor.
-	if err := s.WriteCursor(s.st.LastSeq()); err != nil {
-		return 0, fmt.Errorf("expire: cursor: %w", err)
-	}
 	for _, key := range keys {
 		if !s.st.Has(key) {
 			continue
@@ -23,6 +18,12 @@ func (s *Scanner) Scan(now int64) (int, error) {
 		if err := s.st.Delete(key); err != nil {
 			return 0, fmt.Errorf("expire: delete %s: %w", key, err)
 		}
+	}
+	// Advance the cursor only after every deletion in the batch is durable.
+	// Moving it earlier leaves the cursor past keys whose tombstones have not
+	// been written yet, so a crash mid-batch would skip them on resume.
+	if err := s.WriteCursor(s.st.LastSeq()); err != nil {
+		return 0, fmt.Errorf("expire: cursor: %w", err)
 	}
 	_ = s.audit.Note("expire", "", "", fmt.Sprintf("%d keys cleaned", len(keys)))
 	return len(keys), nil
