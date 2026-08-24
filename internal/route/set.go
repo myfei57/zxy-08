@@ -20,13 +20,13 @@ func (r *Router) Set(key string, value []byte, ttl int64) error {
 	if !ok {
 		return fmt.Errorf("route: no store for %s", owner)
 	}
-	op, err := st.Set(key, value, ttl)
-	if err != nil {
+	// The capacity gate must run before the write touches storage; otherwise an
+	// over-quota value is stored before the error is returned.
+	if err := r.quota.Check(key, int64(len(value))); err != nil {
 		return err
 	}
-	// The capacity gate runs after the write already consumed storage, so an
-	// over-quota write is stored before the error is returned.
-	if err := r.quota.Check(key, int64(len(value))); err != nil {
+	op, err := st.Set(key, value, ttl)
+	if err != nil {
 		return err
 	}
 	if err := r.quota.Account(key, int64(len(value))); err != nil {
